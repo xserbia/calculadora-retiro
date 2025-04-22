@@ -230,8 +230,9 @@ function calcularRetiro() {
 
   const años_ahorro = edad_retiro - edad_actual;
   const años_retiro = vida - edad_retiro;
-  const ingresoHoy = ingreso * reemplazo + seguro;
-  const ingresoFuturo = ingresoHoy * Math.pow(1 + inflacion, años_ahorro);
+  const ingresoDeseado = ingreso * reemplazo;
+  const ingresoRequerido = Math.max(ingresoDeseado - seguro, 0); // nunca negativo
+  const ingresoFuturo = ingresoRequerido * Math.pow(1 + inflacion, años_ahorro);
   const tasa_real = (1 + tasa_retiro) / (1 + inflacion) - 1;
   const factor_ordinario = (1 - Math.pow(1 + tasa_real, -años_retiro)) / tasa_real;
   const factor_anticipado = factor_ordinario * (1 + tasa_real);
