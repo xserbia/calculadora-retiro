@@ -107,6 +107,11 @@
       font-weight: 500;
       color: #1f2937;
     }
+    h1 {
+  overflow: visible;
+  position: relative;
+  z-index: 0;
+}
     #mensajeAlerta {
       display: none;
     }
@@ -128,8 +133,9 @@
   </style>
 </head>
 <body>
-  <div class="container">
-<h1>Calculadora de Retiro con Monte Carlo <span class="tooltip" data-tooltip="Esta calculadora es solo para fines educativos y no constituye asesoría financiera, legal ni fiscal. Consulta a un profesional para recomendaciones personalizadas.">🛈</span></h1>
+<div class="container">
+  <h1>Calculadora de Retiro con Monte Carlo</h1>
+</div>
 
     <label for="edadActual">Edad actual <span class="tooltip" data-tooltip="Tu edad actual hoy. Sirve como punto de partida para calcular los años que faltan hasta tu retiro.">🛈</span></label>
     <input type="number" id="edadActual" />
@@ -185,6 +191,15 @@
     </div>
 
     <div id="mensajeAlerta" class="resultado-bloque"></div>
+      <div style="margin-top: 40px; font-size: 13px; color: #4b5563; line-height: 1.6; border-top: 1px solid #ddd; padding-top: 16px;">
+      <p><strong>⚠️ Acerca de esta calculadora</strong><br>
+      Esta calculadora de retiro tiene como objetivo ayudarte a visualizar cuánto podrías necesitar al momento de retirarte, basándose en tus ingresos actuales, expectativas de vida, tasas de rendimiento estimadas y otros factores relevantes. Los resultados se generan a partir de supuestos ingresados por el usuario y fórmulas financieras estándar, incluyendo simulaciones de Monte Carlo para evaluar la probabilidad de éxito bajo escenarios variables.<br>
+      Los resultados son aproximados y deben usarse únicamente como guía para la planificación financiera personal.</p>
+
+      <p><strong>⚖️ Aviso legal</strong><br>
+      Esta herramienta se proporciona únicamente con fines informativos y educativos. No constituye asesoramiento financiero, legal, contable ni fiscal. Los resultados generados no garantizan resultados futuros ni deben tomarse como base exclusiva para decisiones financieras.<br>
+      Recomendamos consultar con un asesor financiero calificado o un profesional certificado antes de tomar decisiones relacionadas con tu retiro o tus inversiones.</p>
+    </div>
   </div>
 
   <script>
