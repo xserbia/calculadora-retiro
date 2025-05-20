@@ -193,7 +193,7 @@ let graficoYaDibujado = false;
 document.getElementById("btnCalcular").addEventListener("click", calcularRetiro);
 document.getElementById("btnMonteCarlo").addEventListener("click", simularMonteCarlo);
 
-function calcularRetiro() {
+  function calcularRetiro() {
   const edad_actual = get('edadActual');
   const edad_retiro = get('edadRetiro');
   const vida = get('vidaEsperada');
@@ -231,20 +231,17 @@ function calcularRetiro() {
   const años_ahorro = edad_retiro - edad_actual;
   const años_retiro = vida - edad_retiro;
 
-  // ✅ Tasa real ajustada por inflación
   const tasa_real_acum = (1 + tasa_acum) / (1 + inflacion) - 1;
   const tasa_real_retiro = (1 + tasa_retiro) / (1 + inflacion) - 1;
 
-  // ✅ Ingreso deseado y seguro social sin inflación (valores reales)
   const ingresoDeseado = ingreso * reemplazo;
-  const ingresoNeto = Math.max(ingresoDeseado - seguro, 0);
+  const ingresoNetoHoy = Math.max(ingresoDeseado - seguro, 0);
+  const ingresoNetoFuturo = ingresoNetoHoy * Math.pow(1 + inflacion, años_ahorro);
 
-  // ✅ Capital necesario en el momento de retiro
   const factor_ordinario = (1 - Math.pow(1 + tasa_real_retiro, -años_retiro)) / tasa_real_retiro;
   const factor_anticipado = factor_ordinario * (1 + tasa_real_retiro);
-  const capital = ingresoNeto * factor_anticipado;
+  const capital = ingresoNetoFuturo * factor_anticipado;
 
-  // ✅ Total acumulado estimado en valores reales
   const ahorroFuturo = tasa_real_acum > 0
     ? ahorro_inicial * Math.pow(1 + tasa_real_acum, años_ahorro)
     : ahorro_inicial;
@@ -254,24 +251,25 @@ function calcularRetiro() {
     : ahorro_anual * años_ahorro;
 
   const total = ahorroFuturo + aportes;
-  const faltante = capital - total;
-  const lump_sum = faltante > 0 ? faltante / Math.pow(1 + tasa_real_acum, años_ahorro) : 0;
+  const deficit = capital - total;
 
   let aporteAnualNecesario = 0;
   let aporteMensualNecesario = 0;
-  if (faltante > 0 && tasa_real_acum > 0) {
-    aporteAnualNecesario = faltante * tasa_real_acum / (Math.pow(1 + tasa_real_acum, años_ahorro) - 1);
+  if (deficit > 0 && tasa_real_acum > 0) {
+    aporteAnualNecesario = deficit * tasa_real_acum / (Math.pow(1 + tasa_real_acum, años_ahorro) - 1);
     aporteMensualNecesario = aporteAnualNecesario / 12;
   }
 
   const resumen = `
     <h2>🧾 Resultados calculados</h2>
     <table>
-      <tr><td>🧱 <strong>Capital necesario:</strong></td><td>$${Number(capital.toFixed(2)).toLocaleString()}</td></tr>
-      <tr><td>💼 <strong>Total acumulado estimado:</strong></td><td>$${Number(total.toFixed(2)).toLocaleString()}</td></tr>
-      <tr><td>⚠️ <strong>Faltante actual (lump sum):</strong></td><td>${lump_sum > 0 ? "$" + Number(lump_sum.toFixed(2)).toLocaleString() : "Meta alcanzada"}</td></tr>
-      <tr><td>💸 <strong>Aporte anual recomendado extra:</strong></td><td>${aporteAnualNecesario > 0 ? "$" + Number(aporteAnualNecesario.toFixed(2)).toLocaleString() + "/año" : "No requerido"}</td></tr>
-      <tr><td>💰 <strong>Aporte mensual recomendado extra:</strong></td><td>${aporteMensualNecesario > 0 ? "$" + Number(aporteMensualNecesario.toFixed(2)).toLocaleString() + "/mes" : "No requerido"}</td></tr>
+      <tr><td>📅 <strong>Ingreso neto requerido hoy:</strong></td><td>$${ingresoNetoHoy.toLocaleString(undefined, {maximumFractionDigits: 2})}</td></tr>
+      <tr><td>📈 <strong>Ingreso requerido ajustado al año de retiro:</strong></td><td>$${ingresoNetoFuturo.toLocaleString(undefined, {maximumFractionDigits: 2})}</td></tr>
+      <tr><td>🧱 <strong>Capital necesario al retiro:</strong></td><td>$${capital.toLocaleString(undefined, {maximumFractionDigits: 2})}</td></tr>
+      <tr><td>💼 <strong>Total acumulado estimado:</strong></td><td>$${total.toLocaleString(undefined, {maximumFractionDigits: 2})}</td></tr>
+      <tr><td>⚠️ <strong>Déficit actual (capital faltante):</strong></td><td>${deficit > 0 ? "$" + deficit.toLocaleString(undefined, {maximumFractionDigits: 2}) : "Meta alcanzada"}</td></tr>
+      <tr><td>💸 <strong>Aporte anual recomendado extra:</strong></td><td>${aporteAnualNecesario > 0 ? "$" + aporteAnualNecesario.toLocaleString(undefined, {maximumFractionDigits: 2}) + "/año" : "No requerido"}</td></tr>
+      <tr><td>💰 <strong>Aporte mensual recomendado extra:</strong></td><td>${aporteMensualNecesario > 0 ? "$" + aporteMensualNecesario.toLocaleString(undefined, {maximumFractionDigits: 2}) + "/mes" : "No requerido"}</td></tr>
     </table>`;
 
   document.getElementById('resumenCalculadora').innerHTML = resumen;
