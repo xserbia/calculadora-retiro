@@ -312,23 +312,18 @@ function simularMonteCarlo() {
     boton.textContent = "Simular con Monte Carlo";
     return;
   }
-  if (reemplazo < 0 || reemplazo > 1) {
-    mostrarAlerta("❌ El porcentaje de reemplazo debe estar entre 0% y 100%.");
-    boton.disabled = false;
-    boton.textContent = "Simular con Monte Carlo";
-    return;
-  }
 
   const años_ahorro = edad_retiro - edad_actual;
   const años_retiro = vida - edad_retiro;
   total_años = años_ahorro + años_retiro;
 
-  // ✅ Tasas reales ajustadas por inflación
   const tasa_real_acum = (1 + tasa_acum) / (1 + inflacion) - 1;
   const tasa_real_retiro = (1 + tasa_retiro) / (1 + inflacion) - 1;
 
-  // ✅ Flujo neto anual en retiro en términos reales
-  const retiro_base = ingreso * reemplazo - seguro;
+  // Ajuste de ingreso neto requerido al año de retiro
+  const ingresoDeseado = ingreso * reemplazo;
+  const ingresoNetoHoy = Math.max(ingresoDeseado - seguro, 0);
+  const retiro_base = ingresoNetoHoy * Math.pow(1 + inflacion, años_ahorro); // ingreso requerido en valores futuros
 
   const meanAcumReal = tasa_real_acum;
   const meanRetiroReal = tasa_real_retiro;
@@ -342,11 +337,15 @@ function simularMonteCarlo() {
   for (let i = 0; i < simulaciones; i++) {
     let capital = ahorro_inicial;
     let trayectoria = [];
+
+    // Fase de acumulación
     for (let j = 0; j < años_ahorro; j++) {
       const rendimiento = randomNormal(meanAcumReal, stdDev);
       capital = capital * (1 + rendimiento) + ahorro_anual;
       if (i < muestrasParaGrafico) trayectoria.push(capital);
     }
+
+    // Fase de retiro
     let exito = true;
     for (let k = 0; k < años_retiro; k++) {
       const rendimiento = randomNormal(meanRetiroReal, stdDev);
@@ -357,6 +356,7 @@ function simularMonteCarlo() {
         break;
       }
     }
+
     if (i < muestrasParaGrafico) trayectorias.push({ data: trayectoria, exito });
     if (exito) exitos++;
   }
@@ -376,63 +376,6 @@ function simularMonteCarlo() {
   }, 1000);
   graficoYaDibujado = false;
 }
-
-function randomNormal(mean, stdDev) {
-  let u = 0, v = 0;
-  while (u === 0) u = Math.random();
-  while (v === 0) v = Math.random();
-  return mean + stdDev * Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
-}
-
-function dibujarGraficoMonteCarlo(trayectorias, totalAnios) {
-  const ctx = document.getElementById("graficoMonteCarlo").getContext("2d");
-  const labels = Array.from({ length: totalAnios }, (_, i) => `Año ${i + 1}`);
-  const datasets = trayectorias.map(({ data, exito }) => ({
-    label: exito ? '✅ Éxito' : '❌ Fallo',
-    data,
-    fill: false,
-    borderColor: exito ? 'rgba(34,197,94,0.8)' : 'rgba(239,68,68,0.8)',
-    borderWidth: 1.5,
-    tension: 0.1
-  }));
-  new Chart(ctx, {
-    type: 'line',
-    data: { labels, datasets },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: ctx => `$${ctx.raw.toFixed(0).toLocaleString()}`
-          }
-        }
-      },
-      scales: {
-        y: {
-          ticks: {
-            callback: value => `$${Number(value).toLocaleString()}`
-          }
-        }
-      }
-    }
-  });
-}
-
-document.getElementById("btnToggleGrafico").onclick = () => {
-  const modal = document.getElementById("modalGrafico");
-  const visible = modal.style.display === "flex";
-  const btn = document.getElementById("btnToggleGrafico");
-  if (visible) {
-    modal.style.display = "none";
-    btn.textContent = "📈 Ver gráfico";
-  } else {
-    modal.style.display = "flex";
-    btn.textContent = "🔽 Ocultar gráfico";
-    if (!graficoYaDibujado) {
-      dibujarGraficoMonteCarlo(trayectorias, total_años);
-      graficoYaDibujado = true;
-    }
   }
 };
 
