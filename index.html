@@ -230,23 +230,37 @@ function calcularRetiro() {
 
   const años_ahorro = edad_retiro - edad_actual;
   const años_retiro = vida - edad_retiro;
+
+  // ✅ Tasa real ajustada por inflación
+  const tasa_real_acum = (1 + tasa_acum) / (1 + inflacion) - 1;
+  const tasa_real_retiro = (1 + tasa_retiro) / (1 + inflacion) - 1;
+
+  // ✅ Ingreso deseado y seguro social sin inflación (valores reales)
   const ingresoDeseado = ingreso * reemplazo;
-  const ingresoRequerido = Math.max(ingresoDeseado - seguro, 0); // nunca negativo
-  const ingresoFuturo = ingresoRequerido * Math.pow(1 + inflacion, años_ahorro);
-  const tasa_real = (1 + tasa_retiro) / (1 + inflacion) - 1;
-  const factor_ordinario = (1 - Math.pow(1 + tasa_real, -años_retiro)) / tasa_real;
-  const factor_anticipado = factor_ordinario * (1 + tasa_real);
-  const capital = ingresoFuturo * factor_anticipado;
-  const ahorroFuturo = ahorro_inicial * Math.pow(1 + tasa_acum, años_ahorro);
-  const aportes = ahorro_anual * ((Math.pow(1 + tasa_acum, años_ahorro) - 1) / tasa_acum);
+  const ingresoNeto = Math.max(ingresoDeseado - seguro, 0);
+
+  // ✅ Capital necesario en el momento de retiro
+  const factor_ordinario = (1 - Math.pow(1 + tasa_real_retiro, -años_retiro)) / tasa_real_retiro;
+  const factor_anticipado = factor_ordinario * (1 + tasa_real_retiro);
+  const capital = ingresoNeto * factor_anticipado;
+
+  // ✅ Total acumulado estimado en valores reales
+  const ahorroFuturo = tasa_real_acum > 0
+    ? ahorro_inicial * Math.pow(1 + tasa_real_acum, años_ahorro)
+    : ahorro_inicial;
+
+  const aportes = tasa_real_acum > 0
+    ? ahorro_anual * ((Math.pow(1 + tasa_real_acum, años_ahorro) - 1) / tasa_real_acum)
+    : ahorro_anual * años_ahorro;
+
   const total = ahorroFuturo + aportes;
   const faltante = capital - total;
-  const lump_sum = faltante > 0 ? faltante / Math.pow(1 + tasa_acum, años_ahorro) : 0;
+  const lump_sum = faltante > 0 ? faltante / Math.pow(1 + tasa_real_acum, años_ahorro) : 0;
 
   let aporteAnualNecesario = 0;
   let aporteMensualNecesario = 0;
-  if (faltante > 0) {
-    aporteAnualNecesario = faltante * tasa_acum / (Math.pow(1 + tasa_acum, años_ahorro) - 1);
+  if (faltante > 0 && tasa_real_acum > 0) {
+    aporteAnualNecesario = faltante * tasa_real_acum / (Math.pow(1 + tasa_real_acum, años_ahorro) - 1);
     aporteMensualNecesario = aporteAnualNecesario / 12;
   }
 
@@ -273,12 +287,15 @@ function simularMonteCarlo() {
   const ingreso = get('ingreso');
   const reemplazo = get('reemplazo') / 100;
   const seguro = isNaN(get('seguro')) ? 0 : get('seguro');
+  const tasa_acum = get('tasaAcum') / 100;
+  const tasa_retiro = get('tasaRetiro') / 100;
+  const inflacion = get('inflacion') / 100;
 
   const boton = document.getElementById("btnMonteCarlo");
   boton.disabled = true;
   boton.textContent = "🔄 Calculando...";
 
-  const campos = [edad_actual, edad_retiro, vida, ingreso, reemplazo, ahorro_inicial, ahorro_anual];
+  const campos = [edad_actual, edad_retiro, vida, ingreso, reemplazo, ahorro_inicial, ahorro_anual, tasa_acum, tasa_retiro, inflacion];
   if (campos.some(val => isNaN(val))) {
     mostrarAlerta("❌ Verifica que todos los campos estén completos y válidos.");
     boton.disabled = false;
@@ -307,11 +324,18 @@ function simularMonteCarlo() {
   const años_ahorro = edad_retiro - edad_actual;
   const años_retiro = vida - edad_retiro;
   total_años = años_ahorro + años_retiro;
-  const retiro_base = ingreso * reemplazo + seguro;
 
-  const meanAcum = 0.07;
-  const meanRetiro = 0.05;
+  // ✅ Tasas reales ajustadas por inflación
+  const tasa_real_acum = (1 + tasa_acum) / (1 + inflacion) - 1;
+  const tasa_real_retiro = (1 + tasa_retiro) / (1 + inflacion) - 1;
+
+  // ✅ Flujo neto anual en retiro en términos reales
+  const retiro_base = ingreso * reemplazo - seguro;
+
+  const meanAcumReal = tasa_real_acum;
+  const meanRetiroReal = tasa_real_retiro;
   const stdDev = 0.12;
+
   const simulaciones = 10000;
   let exitos = 0;
   trayectorias = [];
@@ -321,13 +345,13 @@ function simularMonteCarlo() {
     let capital = ahorro_inicial;
     let trayectoria = [];
     for (let j = 0; j < años_ahorro; j++) {
-      const rendimiento = randomNormal(meanAcum, stdDev);
+      const rendimiento = randomNormal(meanAcumReal, stdDev);
       capital = capital * (1 + rendimiento) + ahorro_anual;
       if (i < muestrasParaGrafico) trayectoria.push(capital);
     }
     let exito = true;
     for (let k = 0; k < años_retiro; k++) {
-      const rendimiento = randomNormal(meanRetiro, stdDev);
+      const rendimiento = randomNormal(meanRetiroReal, stdDev);
       capital = capital * (1 + rendimiento) - retiro_base;
       if (i < muestrasParaGrafico) trayectoria.push(capital);
       if (capital <= 0) {
@@ -433,4 +457,3 @@ function mostrarAlerta(msg) {
 </script>
 </body>
 </html>
-
