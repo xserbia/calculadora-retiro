@@ -277,6 +277,9 @@ document.getElementById("btnMonteCarlo").addEventListener("click", simularMonteC
 }
 
 function simularMonteCarlo() {
+  console.log("▶️ Se presionó el botón de Monte Carlo");
+
+  // Captura de inputs
   const edad_actual = get('edadActual');
   const edad_retiro = get('edadRetiro');
   const vida = get('vidaEsperada');
@@ -293,6 +296,7 @@ function simularMonteCarlo() {
   boton.disabled = true;
   boton.textContent = "🔄 Calculando...";
 
+  // Validación rápida de campos
   const campos = [edad_actual, edad_retiro, vida, ingreso, reemplazo, ahorro_inicial, ahorro_anual, tasa_acum, tasa_retiro, inflacion];
   if (campos.some(val => isNaN(val))) {
     mostrarAlerta("❌ Verifica que todos los campos estén completos y válidos.");
@@ -300,19 +304,14 @@ function simularMonteCarlo() {
     boton.textContent = "Simular con Monte Carlo";
     return;
   }
-  if (edad_retiro <= edad_actual) {
-    mostrarAlerta("❌ La edad de retiro debe ser mayor que la edad actual.");
-    boton.disabled = false;
-    boton.textContent = "Simular con Monte Carlo";
-    return;
-  }
-  if (vida <= edad_retiro) {
-    mostrarAlerta("❌ La expectativa de vida debe ser mayor que la edad de retiro.");
+  if (edad_retiro <= edad_actual || vida <= edad_retiro) {
+    mostrarAlerta("❌ Edad de retiro o expectativa de vida no válidas.");
     boton.disabled = false;
     boton.textContent = "Simular con Monte Carlo";
     return;
   }
 
+  // Parámetros base
   const años_ahorro = edad_retiro - edad_actual;
   const años_retiro = vida - edad_retiro;
   total_años = años_ahorro + años_retiro;
@@ -320,19 +319,30 @@ function simularMonteCarlo() {
   const tasa_real_acum = (1 + tasa_acum) / (1 + inflacion) - 1;
   const tasa_real_retiro = (1 + tasa_retiro) / (1 + inflacion) - 1;
 
-  // Ajuste de ingreso neto requerido al año de retiro
   const ingresoDeseado = ingreso * reemplazo;
   const ingresoNetoHoy = Math.max(ingresoDeseado - seguro, 0);
-  const retiro_base = ingresoNetoHoy * Math.pow(1 + inflacion, años_ahorro); // ingreso requerido en valores futuros
+  const retiro_base = ingresoNetoHoy * Math.pow(1 + inflacion, años_ahorro);
 
+  // Validación de retiro_base
+  console.log("💡 retiro_base =", retiro_base);
+  if (isNaN(retiro_base) || retiro_base <= 0) {
+    mostrarAlerta("❌ Error al calcular el ingreso requerido. Revisa los valores de ingreso, reemplazo, pensión o inflación.");
+    boton.disabled = false;
+    boton.textContent = "Simular con Monte Carlo";
+    return;
+  }
+
+  // Parámetros de simulación
   const meanAcumReal = tasa_real_acum;
   const meanRetiroReal = tasa_real_retiro;
   const stdDev = 0.12;
-
   const simulaciones = 10000;
+  const muestrasParaGrafico = 10;
+
   let exitos = 0;
   trayectorias = [];
-  const muestrasParaGrafico = 10;
+
+  console.log("🔁 Iniciando simulación Monte Carlo con", simulaciones, "escenarios...");
 
   for (let i = 0; i < simulaciones; i++) {
     let capital = ahorro_inicial;
@@ -362,6 +372,9 @@ function simularMonteCarlo() {
   }
 
   const probabilidad = (exitos / simulaciones) * 100;
+  console.log("✅ Simulaciones completadas. Probabilidad de éxito:", probabilidad.toFixed(1) + "%");
+
+  // Mostrar resultados
   document.getElementById('resultadoMonteCarlo').innerHTML = `
     <h2>🔄 Simulación Monte Carlo</h2>
     <table>
@@ -369,13 +382,16 @@ function simularMonteCarlo() {
       <tr><td>📌 <strong>Interpretación:</strong></td><td>En ${probabilidad.toFixed(1)}% de los escenarios simulados, no te quedas sin dinero antes de los ${vida} años.</td></tr>
     </table>`;
 
+  // Restaurar el botón
   boton.textContent = "✅ Hecho";
   setTimeout(() => {
     boton.disabled = false;
     boton.textContent = "Simular con Monte Carlo";
   }, 1000);
+
   graficoYaDibujado = false;
 }
+
 document.getElementById("modalGrafico").onclick = () => {
   document.getElementById("modalGrafico").style.display = "none";
   document.getElementById("btnToggleGrafico").textContent = "📈 Ver gráfico";
@@ -391,6 +407,12 @@ function mostrarAlerta(msg) {
   alerta.style.backgroundColor = '#fee2e2';
   alerta.style.color = '#991b1b';
   alerta.style.display = 'block';
+}
+  function randomNormal(mean, stdDev) {
+  let u = 0, v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return mean + stdDev * Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
 }
 </script>
 </body>
