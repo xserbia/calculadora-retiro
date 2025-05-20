@@ -164,292 +164,191 @@
     <label for="ahorroAnual">Aporte anual <span class="tooltip" data-tooltip="Cantidad de dinero que planeas ahorrar cada año hasta tu jubilación.">🛈</span></label>
     <input type="number" id="ahorroAnual" />
 
-<button id="btnCalculoTotal">Calcular</button>
+<button id="btnCalculoTotal">Calcular todo</button>
 
-    <div id="resultados">
-      <div id="resumenCalculadora" class="resultado-bloque"></div>
-      <div id="resultadoMonteCarlo" class="resultado-bloque"></div>
+    <div id="resumenCalculadora" class="resultado-bloque">
+      <h2>💾 Resultados calculados</h2>
+      <table id="tablaResumen">
+        <tr><td colspan="2" style="text-align:center; color:#888;">Presiona "Calcular" para ver resultados</td></tr>
+      </table>
     </div>
 
-    <div id="graficoThumbnail" style="margin-top: 16px; text-align: center;">
-      <button id="btnToggleGrafico" style="padding: 10px 20px; font-size: 16px; border-radius: 6px; background: #2563eb; color: white; border: none;">📈 Ver gráfico</button>
+    <div id="resultadoMonteCarlo" class="resultado-bloque">
+      <h2>🔄 Simulación Monte Carlo</h2>
+      <table id="tablaMonteCarlo">
+        <tr><td colspan="2" style="text-align:center; color:#888;">Presiona "Calcular" para ver simulación</td></tr>
+      </table>
     </div>
 
-    <div id="modalGrafico" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0,0,0,0.6); z-index: 999; justify-content: center; align-items: center;">
-      <div onclick="event.stopPropagation()" style="background: white; padding: 20px; border-radius: 12px; max-width: 90vw; max-height: 90vh; overflow: auto;">
-        <div style="text-align: right;"><button id="cerrarModal" style="background: none; border: none; font-size: 18px; cursor: pointer;">✖</button></div>
-        <canvas id="graficoMonteCarlo" height="400" width="600"></canvas>
-      </div>
+    <div style="text-align:center; margin-top:16px">
+      <canvas id="graficoMonteCarlo" height="400" width="600"></canvas>
     </div>
 
     <div id="mensajeAlerta" class="resultado-bloque"></div>
-<script>
-const get = id => Number(document.getElementById(id).value);
-let trayectorias = [];
-let total_años = 0;
-let graficoYaDibujado = false;
+  </div>
 
-document.getElementById("btnCalcular").addEventListener("click", calcularRetiro);
-document.getElementById("btnMonteCarlo").addEventListener("click", simularMonteCarlo);
+  <script>
+    const get = id => Number(document.getElementById(id).value);
+    let trayectorias = [];
+    let total_años = 0;
 
-  function calcularRetiro() {
-  const edad_actual = get('edadActual');
-  const edad_retiro = get('edadRetiro');
-  const vida = get('vidaEsperada');
-  const ingreso = get('ingreso');
-  const reemplazo = get('reemplazo') / 100;
-  const seguro = isNaN(get('seguro')) ? 0 : get('seguro');
-  const tasa_acum = get('tasaAcum') / 100;
-  const tasa_retiro = get('tasaRetiro') / 100;
-  const inflacion = get('inflacion') / 100;
-  const ahorro_inicial = get('ahorroInicial');
-  const ahorro_anual = get('ahorroAnual');
+    document.getElementById("btnCalculoTotal").addEventListener("click", () => {
+      calcularRetiro();
+      simularMonteCarlo();
+      setTimeout(() => dibujarGraficoMonteCarlo(trayectorias, total_años), 500);
+    });
 
-  const campos = [edad_actual, edad_retiro, vida, ingreso, reemplazo, tasa_acum, tasa_retiro, inflacion, ahorro_inicial, ahorro_anual];
-  if (campos.some(val => isNaN(val))) {
-    mostrarAlerta("❌ Verifica que todos los campos estén completos y válidos.");
-    return;
-  }
-  if (edad_retiro <= edad_actual) {
-    mostrarAlerta("❌ La edad de retiro debe ser mayor que la edad actual.");
-    return;
-  }
-  if (vida <= edad_retiro) {
-    mostrarAlerta("❌ La expectativa de vida debe ser mayor que la edad de retiro.");
-    return;
-  }
-  if ([tasa_acum, tasa_retiro, inflacion].some(t => t < 0 || t > 1)) {
-    mostrarAlerta("❌ Las tasas deben estar entre 0% y 100%.");
-    return;
-  }
-  if (reemplazo < 0 || reemplazo > 1) {
-    mostrarAlerta("❌ El porcentaje de reemplazo debe estar entre 0% y 100%.");
-    return;
-  }
+    function calcularRetiro() {
+      const edad_actual = get('edadActual');
+      const edad_retiro = get('edadRetiro');
+      const vida = get('vidaEsperada');
+      const ingreso = get('ingreso');
+      const reemplazo = get('reemplazo') / 100;
+      const seguro = isNaN(get('seguro')) ? 0 : get('seguro');
+      const tasa_acum = get('tasaAcum') / 100;
+      const tasa_retiro = get('tasaRetiro') / 100;
+      const inflacion = get('inflacion') / 100;
+      const ahorro_inicial = get('ahorroInicial');
+      const ahorro_anual = get('ahorroAnual');
 
-  const años_ahorro = edad_retiro - edad_actual;
-  const años_retiro = vida - edad_retiro;
+      const campos = [edad_actual, edad_retiro, vida, ingreso, reemplazo, tasa_acum, tasa_retiro, inflacion, ahorro_inicial, ahorro_anual];
+      if (campos.some(val => isNaN(val))) return mostrarAlerta("❌ Verifica que todos los campos estén completos y válidos.");
+      if (edad_retiro <= edad_actual) return mostrarAlerta("❌ La edad de retiro debe ser mayor que la edad actual.");
+      if (vida <= edad_retiro) return mostrarAlerta("❌ La expectativa de vida debe ser mayor que la edad de retiro.");
 
-  const tasa_real_acum = (1 + tasa_acum) / (1 + inflacion) - 1;
-  const tasa_real_retiro = (1 + tasa_retiro) / (1 + inflacion) - 1;
+      const a_ahorro = edad_retiro - edad_actual;
+      const a_retiro = vida - edad_retiro;
+      total_años = a_ahorro + a_retiro;
 
-  const ingresoDeseado = ingreso * reemplazo;
-  const ingresoNetoHoy = Math.max(ingresoDeseado - seguro, 0);
-  const ingresoNetoFuturo = ingresoNetoHoy * Math.pow(1 + inflacion, años_ahorro);
+      const tasa_real_acum = (1 + tasa_acum) / (1 + inflacion) - 1;
+      const tasa_real_retiro = (1 + tasa_retiro) / (1 + inflacion) - 1;
 
-  const factor_ordinario = (1 - Math.pow(1 + tasa_real_retiro, -años_retiro)) / tasa_real_retiro;
-  const factor_anticipado = factor_ordinario * (1 + tasa_real_retiro);
-  const capital = ingresoNetoFuturo * factor_anticipado;
+      const ingresoDeseado = ingreso * reemplazo;
+      const ingresoNetoHoy = Math.max(ingresoDeseado - seguro, 0);
+      const ingresoNetoFuturo = ingresoNetoHoy * Math.pow(1 + inflacion, a_ahorro);
+      const factor_anticipado = (1 - Math.pow(1 + tasa_real_retiro, -a_retiro)) / tasa_real_retiro * (1 + tasa_real_retiro);
+      const capital = ingresoNetoFuturo * factor_anticipado;
 
-  const ahorroFuturo = tasa_real_acum > 0
-    ? ahorro_inicial * Math.pow(1 + tasa_real_acum, años_ahorro)
-    : ahorro_inicial;
+      const ahorroFuturo = ahorro_inicial * Math.pow(1 + tasa_real_acum, a_ahorro);
+      const aportes = ahorro_anual * ((Math.pow(1 + tasa_real_acum, a_ahorro) - 1) / tasa_real_acum);
+      const total = ahorroFuturo + aportes;
+      const deficit = capital - total;
 
-  const aportes = tasa_real_acum > 0
-    ? ahorro_anual * ((Math.pow(1 + tasa_real_acum, años_ahorro) - 1) / tasa_real_acum)
-    : ahorro_anual * años_ahorro;
-
-  const total = ahorroFuturo + aportes;
-  const deficit = capital - total;
-
-  let aporteAnualNecesario = 0;
-  let aporteMensualNecesario = 0;
-  if (deficit > 0 && tasa_real_acum > 0) {
-    aporteAnualNecesario = deficit * tasa_real_acum / (Math.pow(1 + tasa_real_acum, años_ahorro) - 1);
-    aporteMensualNecesario = aporteAnualNecesario / 12;
-  }
-
-  const resumen = `
-    <h2>🧾 Resultados calculados</h2>
-    <table>
-      <tr><td>📅 <strong>Ingreso neto requerido hoy:</strong></td><td>$${ingresoNetoHoy.toLocaleString(undefined, {maximumFractionDigits: 2})}</td></tr>
-      <tr><td>📈 <strong>Ingreso requerido ajustado al año de retiro:</strong></td><td>$${ingresoNetoFuturo.toLocaleString(undefined, {maximumFractionDigits: 2})}</td></tr>
-      <tr><td>🧱 <strong>Capital necesario al retiro:</strong></td><td>$${capital.toLocaleString(undefined, {maximumFractionDigits: 2})}</td></tr>
-      <tr><td>💼 <strong>Total acumulado estimado:</strong></td><td>$${total.toLocaleString(undefined, {maximumFractionDigits: 2})}</td></tr>
-      <tr><td>⚠️ <strong>Déficit actual (capital faltante):</strong></td><td>${deficit > 0 ? "$" + deficit.toLocaleString(undefined, {maximumFractionDigits: 2}) : "Meta alcanzada"}</td></tr>
-      <tr><td>💸 <strong>Aporte anual recomendado extra:</strong></td><td>${aporteAnualNecesario > 0 ? "$" + aporteAnualNecesario.toLocaleString(undefined, {maximumFractionDigits: 2}) + "/año" : "No requerido"}</td></tr>
-      <tr><td>💰 <strong>Aporte mensual recomendado extra:</strong></td><td>${aporteMensualNecesario > 0 ? "$" + aporteMensualNecesario.toLocaleString(undefined, {maximumFractionDigits: 2}) + "/mes" : "No requerido"}</td></tr>
-    </table>`;
-
-  document.getElementById('resumenCalculadora').innerHTML = resumen;
-  document.getElementById('mensajeAlerta').style.display = 'none';
-}
-
-function simularMonteCarlo() {
-  console.log("▶️ Se presionó el botón de Monte Carlo");
-
-  // Captura de inputs
-  const edad_actual = get('edadActual');
-  const edad_retiro = get('edadRetiro');
-  const vida = get('vidaEsperada');
-  const ahorro_inicial = get('ahorroInicial');
-  const ahorro_anual = get('ahorroAnual');
-  const ingreso = get('ingreso');
-  const reemplazo = get('reemplazo') / 100;
-  const seguro = isNaN(get('seguro')) ? 0 : get('seguro');
-  const tasa_acum = get('tasaAcum') / 100;
-  const tasa_retiro = get('tasaRetiro') / 100;
-  const inflacion = get('inflacion') / 100;
-
-  const boton = document.getElementById("btnMonteCarlo");
-  boton.disabled = true;
-  boton.textContent = "🔄 Calculando...";
-
-  // Validación rápida de campos
-  const campos = [edad_actual, edad_retiro, vida, ingreso, reemplazo, ahorro_inicial, ahorro_anual, tasa_acum, tasa_retiro, inflacion];
-  if (campos.some(val => isNaN(val))) {
-    mostrarAlerta("❌ Verifica que todos los campos estén completos y válidos.");
-    boton.disabled = false;
-    boton.textContent = "Simular con Monte Carlo";
-    return;
-  }
-  if (edad_retiro <= edad_actual || vida <= edad_retiro) {
-    mostrarAlerta("❌ Edad de retiro o expectativa de vida no válidas.");
-    boton.disabled = false;
-    boton.textContent = "Simular con Monte Carlo";
-    return;
-  }
-
-  // Parámetros base
-  const años_ahorro = edad_retiro - edad_actual;
-  const años_retiro = vida - edad_retiro;
-  total_años = años_ahorro + años_retiro;
-
-  const tasa_real_acum = (1 + tasa_acum) / (1 + inflacion) - 1;
-  const tasa_real_retiro = (1 + tasa_retiro) / (1 + inflacion) - 1;
-
-  const ingresoDeseado = ingreso * reemplazo;
-  const ingresoNetoHoy = Math.max(ingresoDeseado - seguro, 0);
-  const retiro_base = ingresoNetoHoy * Math.pow(1 + inflacion, años_ahorro);
-
-  // Validación de retiro_base
-  console.log("💡 retiro_base =", retiro_base);
-  if (isNaN(retiro_base) || retiro_base <= 0) {
-    mostrarAlerta("❌ Error al calcular el ingreso requerido. Revisa los valores de ingreso, reemplazo, pensión o inflación.");
-    boton.disabled = false;
-    boton.textContent = "Simular con Monte Carlo";
-    return;
-  }
-
-  // Parámetros de simulación
-  const meanAcumReal = tasa_real_acum;
-  const meanRetiroReal = tasa_real_retiro;
-  const stdDev = 0.12;
-  const simulaciones = 10000;
-  const muestrasParaGrafico = 10;
-
-  let exitos = 0;
-  trayectorias = [];
-
-  console.log("🔁 Iniciando simulación Monte Carlo con", simulaciones, "escenarios...");
-
-  for (let i = 0; i < simulaciones; i++) {
-    let capital = ahorro_inicial;
-    let trayectoria = [];
-
-    // Fase de acumulación
-    for (let j = 0; j < años_ahorro; j++) {
-      const rendimiento = randomNormal(meanAcumReal, stdDev);
-      capital = capital * (1 + rendimiento) + ahorro_anual;
-      if (i < muestrasParaGrafico) trayectoria.push(capital);
-    }
-
-    // Fase de retiro
-    let exito = true;
-    for (let k = 0; k < años_retiro; k++) {
-      const rendimiento = randomNormal(meanRetiroReal, stdDev);
-      capital = capital * (1 + rendimiento) - retiro_base;
-      if (i < muestrasParaGrafico) trayectoria.push(capital);
-      if (capital <= 0) {
-        exito = false;
-        break;
+      let aporteAnual = 0, aporteMensual = 0;
+      if (deficit > 0) {
+        aporteAnual = deficit * tasa_real_acum / (Math.pow(1 + tasa_real_acum, a_ahorro) - 1);
+        aporteMensual = aporteAnual / 12;
       }
+
+      document.getElementById('tablaResumen').innerHTML = `
+        <tr><td>📅 <strong>Ingreso neto requerido hoy:</strong></td><td>$${ingresoNetoHoy.toLocaleString()}</td></tr>
+        <tr><td>📈 <strong>Ingreso requerido ajustado al año de retiro:</strong></td><td>$${ingresoNetoFuturo.toLocaleString()}</td></tr>
+        <tr><td>🧱 <strong>Capital necesario al retiro:</strong></td><td>$${capital.toLocaleString()}</td></tr>
+        <tr><td>💼 <strong>Total acumulado estimado:</strong></td><td>$${total.toLocaleString()}</td></tr>
+        <tr><td>⚠️ <strong>Déficit actual:</strong></td><td>${deficit > 0 ? "$" + deficit.toLocaleString() : "Meta alcanzada"}</td></tr>
+        <tr><td>💸 <strong>Aporte anual extra:</strong></td><td>${aporteAnual > 0 ? "$" + aporteAnual.toLocaleString() + "/año" : "No requerido"}</td></tr>
+        <tr><td>💰 <strong>Aporte mensual extra:</strong></td><td>${aporteMensual > 0 ? "$" + aporteMensual.toLocaleString() + "/mes" : "No requerido"}</td></tr>
+      `;
     }
 
-    if (i < muestrasParaGrafico) trayectorias.push({ data: trayectoria, exito });
-    if (exito) exitos++;
-  }
+    function simularMonteCarlo() {
+      const edad_actual = get('edadActual');
+      const edad_retiro = get('edadRetiro');
+      const vida = get('vidaEsperada');
+      const ahorro_inicial = get('ahorroInicial');
+      const ahorro_anual = get('ahorroAnual');
+      const ingreso = get('ingreso');
+      const reemplazo = get('reemplazo') / 100;
+      const seguro = isNaN(get('seguro')) ? 0 : get('seguro');
+      const tasa_acum = get('tasaAcum') / 100;
+      const tasa_retiro = get('tasaRetiro') / 100;
+      const inflacion = get('inflacion') / 100;
 
-  const probabilidad = (exitos / simulaciones) * 100;
-  console.log("✅ Simulaciones completadas. Probabilidad de éxito:", probabilidad.toFixed(1) + "%");
+      const a_ahorro = edad_retiro - edad_actual;
+      const a_retiro = vida - edad_retiro;
+      total_años = a_ahorro + a_retiro;
 
-  // Mostrar resultados
-  document.getElementById('resultadoMonteCarlo').innerHTML = `
-    <h2>🔄 Simulación Monte Carlo</h2>
-    <table>
-      <tr><td>🧪 <strong>Probabilidad de éxito:</strong></td><td>${probabilidad.toFixed(1)}%</td></tr>
-      <tr><td>📌 <strong>Interpretación:</strong></td><td>En ${probabilidad.toFixed(1)}% de los escenarios simulados, no te quedas sin dinero antes de los ${vida} años.</td></tr>
-    </table>`;
+      const tasa_real_acum = (1 + tasa_acum) / (1 + inflacion) - 1;
+      const tasa_real_retiro = (1 + tasa_retiro) / (1 + inflacion) - 1;
+      const ingresoNetoHoy = Math.max(ingreso * reemplazo - seguro, 0);
+      const retiro_base = ingresoNetoHoy * Math.pow(1 + inflacion, a_ahorro);
 
-  // Restaurar el botón
-  boton.textContent = "✅ Hecho";
-  setTimeout(() => {
-    boton.disabled = false;
-    boton.textContent = "Simular con Monte Carlo";
-  }, 1000);
+      trayectorias = [];
+      let exitos = 0;
+      const stdDev = 0.12, simulaciones = 10000;
 
-  graficoYaDibujado = false;
-}
+      for (let i = 0; i < simulaciones; i++) {
+        let capital = ahorro_inicial;
+        let trayectoria = [];
+        for (let j = 0; j < a_ahorro; j++) {
+          capital = capital * (1 + randomNormal(tasa_real_acum, stdDev)) + ahorro_anual;
+          if (i < 10) trayectoria.push(capital);
+        }
+        let exito = true;
+        for (let j = 0; j < a_retiro; j++) {
+          capital = capital * (1 + randomNormal(tasa_real_retiro, stdDev)) - retiro_base;
+          if (i < 10) trayectoria.push(capital);
+          if (capital <= 0) { exito = false; break; }
+        }
+        if (i < 10) trayectorias.push({ data: trayectoria, exito });
+        if (exito) exitos++;
+      }
 
-document.getElementById("modalGrafico").onclick = () => {
-  document.getElementById("modalGrafico").style.display = "none";
-  document.getElementById("btnToggleGrafico").textContent = "📈 Ver gráfico";
-};
-document.getElementById("cerrarModal").onclick = () => {
-  document.getElementById("modalGrafico").style.display = "none";
-  document.getElementById("btnToggleGrafico").textContent = "📈 Ver gráfico";
-};
+      const prob = (exitos / simulaciones) * 100;
+      document.getElementById('tablaMonteCarlo').innerHTML = `
+        <tr><td>🧪 <strong>Probabilidad de éxito:</strong></td><td>${prob.toFixed(1)}%</td></tr>
+        <tr><td>📌 <strong>Interpretación:</strong></td><td>En ${prob.toFixed(1)}% de los escenarios simulados, no te quedas sin dinero antes de los ${vida} años.</td></tr>
+      `;
+    }
 
-function mostrarAlerta(msg) {
-  const alerta = document.getElementById('mensajeAlerta');
-  alerta.textContent = msg;
-  alerta.style.backgroundColor = '#fee2e2';
-  alerta.style.color = '#991b1b';
-  alerta.style.display = 'block';
-}
-  function randomNormal(mean, stdDev) {
-  let u = 0, v = 0;
-  while (u === 0) u = Math.random();
-  while (v === 0) v = Math.random();
-  return mean + stdDev * Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
-}
-  function dibujarGraficoMonteCarlo(trayectorias, totalAnios) {
-  const ctx = document.getElementById("graficoMonteCarlo").getContext("2d");
+    function mostrarAlerta(msg) {
+      const alerta = document.getElementById('mensajeAlerta');
+      alerta.textContent = msg;
+      alerta.style.backgroundColor = '#fee2e2';
+      alerta.style.color = '#991b1b';
+      alerta.style.display = 'block';
+    }
 
-  const labels = Array.from({ length: totalAnios }, (_, i) => `Año ${i + 1}`);
-  const datasets = trayectorias.map(({ data, exito }, index) => ({
-    label: `Escenario ${index + 1}`,
-    data: data,
-    borderColor: exito ? 'rgba(34,197,94,0.8)' : 'rgba(239,68,68,0.8)',
-    borderWidth: 1,
-    fill: false,
-    tension: 0.2
-  }));
+    function randomNormal(mean, stdDev) {
+      let u = 0, v = 0;
+      while (u === 0) u = Math.random();
+      while (v === 0) v = Math.random();
+      return mean + stdDev * Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+    }
 
-  new Chart(ctx, {
-    type: 'line',
-    data: { labels, datasets },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: ctx => `$${ctx.raw.toFixed(0).toLocaleString()}`
+    function dibujarGraficoMonteCarlo(trayectorias, totalAnios) {
+      const ctx = document.getElementById("graficoMonteCarlo").getContext("2d");
+      const labels = Array.from({ length: totalAnios }, (_, i) => `Año ${i + 1}`);
+      const datasets = trayectorias.map(({ data, exito }, i) => ({
+        label: `Sim ${i + 1}`,
+        data,
+        borderColor: exito ? 'rgba(34,197,94,0.8)' : 'rgba(239,68,68,0.8)',
+        fill: false,
+        tension: 0.2
+      }));
+      new Chart(ctx, {
+        type: 'line',
+        data: { labels, datasets },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: ctx => `$${ctx.raw.toFixed(0).toLocaleString()}`
+              }
+            }
+          },
+          scales: {
+            y: {
+              ticks: {
+                callback: value => `$${Number(value).toLocaleString()}`
+              }
+            }
           }
         }
-      },
-      scales: {
-        y: {
-          ticks: {
-            callback: value => `$${Number(value).toLocaleString()}`
-          }
-        }
-      }
+      });
     }
-  });
-}
-
-</script>
+  </script>
 </body>
 </html>
