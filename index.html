@@ -337,70 +337,61 @@ button:hover {
         `;
     }
 
-    function simularMonteCarlo() {
-      const edad_actual = get('edadActual');
-      const edad_retiro = get('edadRetiro');
-      const vida = get('vidaEsperada');
-      const ahorro_inicial = get('ahorroInicial');
-      const ahorro_anual = get('ahorroAnual');
-      const ingreso = get('ingreso');
-      const reemplazo = get('reemplazo') / 100;
-      const seguro = isNaN(get('seguro')) ? 0 : get('seguro');
-      const tasa_acum = get('tasaAcum') / 100;
-      const tasa_retiro = get('tasaRetiro') / 100;
-      const inflacion = get('inflacion') / 100;
+function simularMonteCarlo() {
+  const edad_actual = get('edadActual');
+  const edad_retiro = get('edadRetiro');
+  const vida = get('vidaEsperada');
+  const ahorro_inicial = get('ahorroInicial');
+  const ahorro_anual = get('ahorroAnual');
+  const ingreso = get('ingreso');
+  const reemplazo = get('reemplazo') / 100;
+  const seguro = isNaN(get('seguro')) ? 0 : get('seguro');
+  const tasa_acum = get('tasaAcum') / 100;
+  const tasa_retiro = get('tasaRetiro') / 100;
+  const inflacion = get('inflacion') / 100;
 
-      const a_ahorro = edad_retiro - edad_actual;
-      const a_retiro = vida - edad_retiro;
-      total_años = a_ahorro + a_retiro;
+  const a_ahorro = edad_retiro - edad_actual;
+  const a_retiro = vida - edad_retiro;
+  total_años = a_ahorro + a_retiro;
 
-      const tasa_real_acum = (1 + tasa_acum) / (1 + inflacion) - 1;
-      const tasa_real_retiro = (1 + tasa_retiro) / (1 + inflacion) - 1;
-      const ingresoNetoHoy = Math.max(ingreso * reemplazo - seguro, 0);
-      const retiro_base = ingresoNetoHoy * Math.pow(1 + inflacion, a_ahorro);
+  const tasa_real_acum = (1 + tasa_acum) / (1 + inflacion) - 1;
+  const tasa_real_retiro = (1 + tasa_retiro) / (1 + inflacion) - 1;
+  const ingresoNetoHoy = Math.max(ingreso * reemplazo - seguro, 0);
+  const retiro_base = ingresoNetoHoy * Math.pow(1 + inflacion, a_ahorro);
 
-      trayectorias = [];
-      let exitos = 0;
-      const stdDev = 0.12, simulaciones = 10000;
+  trayectorias = [];
+  let exitos = 0;
+  const stdDev = 0.07, simulaciones = 10000;
 
-      for (let i = 0; i < simulaciones; i++) {
-        let capital = ahorro_inicial;
-        let trayectoria = [];
-        for (let j = 0; j < a_ahorro; j++) {
-          capital = capital * (1 + randomNormal(tasa_real_acum, stdDev)) + ahorro_anual;
-          if (i < 10) trayectoria.push(capital);
-        }
-        let exito = true;
-        for (let j = 0; j < a_retiro; j++) {
-          capital = capital * (1 + randomNormal(tasa_real_retiro, stdDev)) - retiro_base;
-          if (i < 10) trayectoria.push(capital);
-          if (capital <= 0) { exito = false; break; }
-        }
-        if (i < 10) trayectorias.push({ data: trayectoria, exito });
-        if (exito) exitos++;
+  for (let i = 0; i < simulaciones; i++) {
+    let capital = ahorro_inicial;
+    let trayectoria = [];
+    for (let j = 0; j < a_ahorro; j++) {
+      const tasa = Math.max(randomNormal(tasa_real_acum, stdDev), -0.2); // Limitar mínimo a -20%
+      capital = capital * (1 + tasa) + ahorro_anual;
+      if (i < 10) trayectoria.push(capital);
+    }
+    let exito = true;
+    for (let j = 0; j < a_retiro; j++) {
+      const tasa = Math.max(randomNormal(tasa_real_retiro, stdDev), -0.2); // También en retiro
+      capital = capital * (1 + tasa) - retiro_base;
+      if (i < 10) trayectoria.push(capital);
+      if (capital <= 0) {
+        exito = false;
+        break;
       }
-
-      const prob = (exitos / simulaciones) * 100;
-      document.getElementById('tablaMonteCarlo').innerHTML = `
-        <div class="fila-output"><span>🧪 Probabilidad de éxito:</span><strong>${prob.toFixed(1)}%</strong></div>
-        <div class="fila-output"><span>📌 Interpretación:</span><strong>En ${prob.toFixed(1)}% de los escenarios simulados, no te quedas sin dinero antes de los ${vida} años.</strong></div>
-      `;
     }
+    if (i < 10) trayectorias.push({ data: trayectoria, exito });
+    if (exito) exitos++;
+  }
 
-    function mostrarAlerta(msg) {
-      const alerta = document.getElementById('mensajeAlerta');
-      alerta.textContent = msg;
-      alerta.style.backgroundColor = '#fee2e2';
-      alerta.style.color = '#991b1b';
-      alerta.style.display = 'block';
-    }
+  const prob = (exitos / simulaciones) * 100;
+  document.getElementById('tablaMonteCarlo').innerHTML = `
+    <div class="fila-output"><span>🧪 Probabilidad de éxito:</span><strong>${prob.toFixed(1)}%</strong></div>
+    <div class="fila-output"><span>📌 Interpretación:</span><strong>En ${prob.toFixed(1)}% de los escenarios simulados, no te quedas sin dinero antes de los ${vida} años.</strong></div>
+  `;
+}
 
-    function randomNormal(mean, stdDev) {
-      let u = 0, v = 0;
-      while (u === 0) u = Math.random();
-      while (v === 0) v = Math.random();
-      return mean + stdDev * Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
-    }
 function dibujarGraficoMonteCarlo(trayectorias, totalAnios) {
   const ctx = document.getElementById("graficoMonteCarlo").getContext("2d");
   const labels = Array.from({ length: totalAnios }, (_, i) => `Año ${i + 1}`);
