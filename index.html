@@ -326,7 +326,7 @@ button:hover {
       }
         document.getElementById('tablaResumen').innerHTML = `
           <div class="output-dos-columnas">
-            <div class="fila-output"><span>📅 Ingreso neto requerido:</span><strong>$${ingresoNetoHoy.toLocaleString()}</strong></div>
+            <div class="fila-output"><span>📅 Ingreso neto requerido:</span><strong>$${ingresoNetoHoy.toFixed(2).toLocaleString()}</strong></div>
             <div class="fila-output"><span>📈 Ingreso requerido en el retiro:</span><strong>$${ingresoNetoFuturo.toLocaleString()}</strong></div>
             <div class="fila-output"><span>🧱 Capital necesario al retiro:</span><strong>$${capital.toLocaleString()}</strong></div>
             <div class="fila-output"><span>💼 Total acumulado estimado:</span><strong>$${total.toLocaleString()}</strong></div>
