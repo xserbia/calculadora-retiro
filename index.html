@@ -196,6 +196,15 @@ button:hover {
   height: auto !important;
   max-width: 100%;
 }
+  .fila-output.mensaje-largo {
+  flex-direction: column;
+  align-items: flex-start;
+}
+.fila-output.mensaje-largo strong {
+  font-weight: 400;
+  color: #374151;
+  margin-top: 4px;
+}
 }
 </style>
 </head>
@@ -394,7 +403,10 @@ function simularMonteCarlo() {
   const prob = (exitos / simulaciones) * 100;
   document.getElementById('tablaMonteCarlo').innerHTML = `
     <div class="fila-output"><span>🧪 Probabilidad de éxito:</span><strong>${prob.toFixed(1)}%</strong></div>
-    <div class="fila-output"><span>📌 Interpretación:</span><strong>En ${prob.toFixed(1)}% de los escenarios simulados, no te quedas sin dinero antes de los ${vida} años.</strong></div>
+    <div class="fila-output" style="flex-direction: column; align-items: flex-start;"> <span>📌 Interpretación:</span>
+    <strong style="font-weight: 400; color: #374151;">En ${prob.toFixed(1)}% de los escenarios simulados, no te quedas sin dinero antes de los ${vida} años.</strong>
+</div>
+
   `;
 }
 
