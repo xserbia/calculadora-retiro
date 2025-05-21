@@ -6,136 +6,189 @@
   <title>Calculadora de Retiro con Monte Carlo</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-  body {
-    font-family: sans-serif;
-    padding: 20px;
-    margin: 0;
-    background: #ffffff;
-    font-size: 0.95rem;
-  }
-  .container {
-    max-width: 100%;
-    margin: auto;
-    padding: 0 12px;
-    box-sizing: border-box;
-  }
+body {
+  font-family: sans-serif;
+  padding: 20px;
+  margin: 0;
+  background: #ffffff;
+  font-size: 0.95rem;
+}
+.container {
+  max-width: 100%;
+  margin: auto;
+  padding: 0 12px;
+  box-sizing: border-box;
+}
+h1 {
+  color: #111827;
+  text-align: center;
+  font-size: 1.75rem;
+  overflow: visible;
+  position: relative;
+  z-index: 0;
+}
+label {
+  display: block;
+  margin: 16px 0 4px;
+  font-weight: bold;
+  font-size: 0.95rem;
+}
+.tooltip {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+.tooltip .tooltip-text {
+  display: none;
+  position: absolute;
+  bottom: 130%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #333;
+  color: #fff;
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+  width: max-content;
+  max-width: 200px;
+  text-align: center;
+  z-index: 999 !important;
+  white-space: normal;
+  word-wrap: break-word;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+.tooltip.active .tooltip-text {
+  display: block;
+}
+input {
+  width: 100%;
+  max-width: 100%;
+  padding: 10px;
+  margin-bottom: 12px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+button {
+  padding: 14px;
+  width: 100%;
+  max-width: 100%;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  margin-top: 10px;
+  transition: background 0.3s;
+}
+button:hover {
+  background: #1e40af;
+}
+.resultado-bloque {
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 24px;
+  overflow-x: auto;
+}
+.resultado-bloque h2 {
+  margin-bottom: 12px;
+  color: #1f2937;
+  font-size: 1.25rem;
+}
+
+/* NUEVO: Estilo para filas sin tabla */
+.output-dos-columnas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+.fila-output {
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.95rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  white-space: nowrap;
+}
+.fila-output span {
+  color: #374151;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fila-output strong {
+  font-size: 0.95rem;
+  color: #111827;
+  font-weight: 600;
+  margin-left: 8px;
+  flex-shrink: 0;
+}
+
+/* ESTILO ANTIGUO DE TABLA (por si se mantiene en otra parte) */
+.resultado-bloque table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+  font-size: 0.95rem;
+  display: block;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+.resultado-bloque td {
+  padding: 6px 0;
+  vertical-align: top;
+  font-size: 0.95rem;
+}
+.resultado-bloque td:last-child {
+  text-align: right;
+  font-weight: 500;
+  color: #1f2937;
+}
+#mensajeAlerta {
+  display: none;
+}
+
+@media (max-width: 600px) {
   h1 {
-    color: #111827;
-    text-align: center;
-    font-size: 1.75rem;
-    overflow: visible;
-    position: relative;
-    z-index: 0;
-  }
-  label {
-    display: block;
-    margin: 16px 0 4px;
-    font-weight: bold;
-    font-size: 0.95rem;
-  }
-  .tooltip {
-    position: relative;
-    display: inline-block;
-    cursor: pointer;
-  }
-  .tooltip .tooltip-text {
-    display: none;
-    position: absolute;
-    bottom: 125%;
-    left: 0;
-    transform: translateX(-10%);
-    background-color: #333;
-    color: #fff;
-    padding: 8px;
-    border-radius: 6px;
-    font-size: 13px;
-    line-height: 1.4;
-    width: 250px;
-    z-index: 10;
-  }
-  .tooltip.active .tooltip-text {
-    display: block;
-  }
-  input {
-    width: 100%;
-    max-width: 100%;
-    padding: 10px;
-    margin-bottom: 12px;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-    font-size: 1rem;
-    box-sizing: border-box;
-  }
-  button {
-    padding: 14px;
-    width: 100%;
-    max-width: 100%;
-    background: #2563eb;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 1rem;
-    margin-top: 10px;
-    transition: background 0.3s;
-  }
-  button:hover {
-    background: #1e40af;
-  }
-  .resultado-bloque {
-    background-color: #f9fafb;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 16px;
-    margin-top: 24px;
-    overflow-x: auto;
-  }
-  .resultado-bloque h2 {
-    margin-bottom: 12px;
-    color: #1f2937;
     font-size: 1.25rem;
   }
-  .resultado-bloque table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 12px;
-    font-size: 0.95rem;
-    display: block;
-    overflow-x: auto;
-    white-space: nowrap;
+  label {
+    font-size: 0.9rem;
+  }
+  input, button {
+    font-size: 0.9rem;
+    padding: 10px;
+  }
+  .resultado-bloque {
+    padding: 12px;
   }
   .resultado-bloque td {
-    padding: 6px 0;
-    vertical-align: top;
-    font-size: 0.95rem;
+    font-size: 0.85rem;
+    padding: 6px 6px;
   }
-  .resultado-bloque td:last-child {
-    text-align: right;
-    font-weight: 500;
-    color: #1f2937;
+  .tooltip .tooltip-text {
+    font-size: 11px !important;
+    max-width: 160px !important;
+    padding: 4px 6px !important;
+    line-height: 1.3 !important;
   }
-  #mensajeAlerta {
-    display: none;
+  .fila-output {
+    font-size: 0.85rem;
+    padding: 8px 10px;
   }
-  @media (max-width: 600px) {
-    h1 {
-      font-size: 1.25rem;
-    }
-    label {
-      font-size: 0.9rem;
-    }
-    input, button {
-      font-size: 0.9rem;
-      padding: 10px;
-    }
-    .resultado-bloque {
-      padding: 12px;
-    }
-    .resultado-bloque td {
-      font-size: 0.85rem;
-      padding: 6px 6px;
-    }
+  .fila-output strong {
+    font-size: 0.85rem;
   }
+}
 </style>
 </head>
 <body>
@@ -143,37 +196,37 @@
   <h1>Calculadora de Retiro con Monte Carlo</h1>
 </div>
 
-    <label for="edadActual">Edad actual <span class="tooltip" data-tooltip="Tu edad actual hoy. Sirve como punto de partida para calcular los años que faltan hasta tu retiro.">🛈</span></label>
+    <label for="edadActual">Edad actual <span class="tooltip" data-tooltip="Tu edad actual hoy. Sirve como punto de partida para calcular los años que faltan hasta tu retiro.">❓</span></label>
     <input type="number" id="edadActual" />
 
-    <label for="edadRetiro">Edad de retiro <span class="tooltip" data-tooltip="La edad a la que planeas jubilarte. Determina cuántos años de ahorro y de retiro tendrás.">🛈</span></label>
+    <label for="edadRetiro">Edad de retiro <span class="tooltip" data-tooltip="La edad a la que planeas jubilarte. Determina cuántos años de ahorro y de retiro tendrás.">❓</span></label>
     <input type="number" id="edadRetiro" />
 
-    <label for="vidaEsperada">Expectativa de vida <span class="tooltip" data-tooltip="Hasta qué edad planeas que duren tus fondos. Puede ser tu esperanza de vida o más si deseas prevenir imprevistos.">🛈</span></label>
+    <label for="vidaEsperada">Expectativa de vida <span class="tooltip" data-tooltip="Hasta qué edad planeas que duren tus fondos. (Ej: 100 años)">❓</span></label>
     <input type="number" id="vidaEsperada" />
 
-    <label for="ingreso">Ingreso anual actual <span class="tooltip" data-tooltip="Tu ingreso bruto anual actual. Se usa como base para calcular cuánto necesitarás en tu jubilación según el porcentaje de reemplazo.">🛈</span></label>
+    <label for="ingreso">Ingreso anual <span class="tooltip" data-tooltip="Tu ingreso bruto anual actual. Se usa como base para calcular cuánto necesitarás en tu jubilación según el porcentaje de reemplazo.">❓</span></label>
     <input type="number" id="ingreso" />
 
-    <label for="reemplazo">% de reemplazo <span class="tooltip" data-tooltip="Porcentaje de tu ingreso actual que deseas mantener al retirarte (ej. 70 significa 70% del ingreso actual).">🛈</span></label>
+    <label for="reemplazo">% de reemplazo <span class="tooltip" data-tooltip="Porcentaje de tu ingreso actual que deseas mantener al retirarte (ej. 70 significa 70% del ingreso actual).">❓</span></label>
     <input type="number" id="reemplazo" />
 
-    <label for="seguro">Ingreso por pensión o seguro social <span class="tooltip" data-tooltip="Monto anual adicional que recibirás en tu jubilación, como pensión o beneficios del seguro social.">🛈</span></label>
+    <label for="seguro">Pensión <span class="tooltip" data-tooltip="Monto anual adicional que recibirás en tu jubilación, como pensión o beneficios del seguro social.">❓</span></label>
     <input type="number" id="seguro" />
 
-    <label for="tasaAcum">Tasa de acumulación (%) <span class="tooltip" data-tooltip="Rendimiento promedio anual esperado de tus inversiones durante los años de ahorro.">🛈</span></label>
+    <label for="tasaAcum">Tasa de acumulación (%) <span class="tooltip" data-tooltip="Rendimiento promedio anual esperado de tus inversiones durante los años de ahorro.">❓</span></label>
     <input type="number" id="tasaAcum" />
 
-    <label for="tasaRetiro">Tasa de retiro (%) <span class="tooltip" data-tooltip="Rendimiento promedio anual esperado de tus inversiones durante los años de retiro.">🛈</span></label>
+    <label for="tasaRetiro">Tasa de retiro (%) <span class="tooltip" data-tooltip="Rendimiento promedio anual esperado de tus inversiones durante los años de retiro.">❓</span></label>
     <input type="number" id="tasaRetiro" />
 
-    <label for="inflacion">Inflación esperada (%) <span class="tooltip" data-tooltip="Porcentaje de aumento de precios esperado por año. Se usa para ajustar el valor del dinero en el tiempo.">🛈</span></label>
+    <label for="inflacion">Inflación esperada (%) <span class="tooltip" data-tooltip="Porcentaje de aumento de precios esperado por año. Se usa para ajustar el valor del dinero en el tiempo.">❓</span></label>
     <input type="number" id="inflacion" />
 
-    <label for="ahorroInicial">Ahorro inicial <span class="tooltip" data-tooltip="Monto que ya tienes ahorrado específicamente para tu retiro.">🛈</span></label>
+    <label for="ahorroInicial">Ahorro inicial <span class="tooltip" data-tooltip="Monto que ya tienes ahorrado específicamente para tu retiro.">❓</span></label>
     <input type="number" id="ahorroInicial" />
 
-    <label for="ahorroAnual">Aporte anual <span class="tooltip" data-tooltip="Cantidad de dinero que planeas ahorrar cada año hasta tu jubilación.">🛈</span></label>
+    <label for="ahorroAnual">Aporte anual <span class="tooltip" data-tooltip="Cantidad de dinero que planeas ahorrar cada año hasta tu jubilación.">❓</span></label>
     <input type="number" id="ahorroAnual" />
 
 <button id="btnCalculoTotal">Calcular todo</button>
@@ -260,16 +313,17 @@
         aporteAnual = deficit * tasa_real_acum / (Math.pow(1 + tasa_real_acum, a_ahorro) - 1);
         aporteMensual = aporteAnual / 12;
       }
-
-      document.getElementById('tablaResumen').innerHTML = `
-        <tr><td>📅 <strong>Ingreso neto requerido hoy:</strong></td><td>$${ingresoNetoHoy.toLocaleString()}</td></tr>
-        <tr><td>📈 <strong>Ingreso requerido ajustado al año de retiro:</strong></td><td>$${ingresoNetoFuturo.toLocaleString()}</td></tr>
-        <tr><td>🧱 <strong>Capital necesario al retiro:</strong></td><td>$${capital.toLocaleString()}</td></tr>
-        <tr><td>💼 <strong>Total acumulado estimado:</strong></td><td>$${total.toLocaleString()}</td></tr>
-        <tr><td>⚠️ <strong>Déficit actual:</strong></td><td>${deficit > 0 ? "$" + deficit.toLocaleString() : "Meta alcanzada"}</td></tr>
-        <tr><td>💸 <strong>Aporte anual extra:</strong></td><td>${aporteAnual > 0 ? "$" + aporteAnual.toLocaleString() + "/año" : "No requerido"}</td></tr>
-        <tr><td>💰 <strong>Aporte mensual extra:</strong></td><td>${aporteMensual > 0 ? "$" + aporteMensual.toLocaleString() + "/mes" : "No requerido"}</td></tr>
-      `;
+        document.getElementById('tablaResumen').innerHTML = `
+          <div class="output-dos-columnas">
+            <div class="fila-output"><span>📅 Ingreso neto requerido hoy:</span><strong>$${ingresoNetoHoy.toLocaleString()}</strong></div>
+            <div class="fila-output"><span>📈 Ingreso requerido ajustado al año de retiro:</span><strong>$${ingresoNetoFuturo.toLocaleString()}</strong></div>
+            <div class="fila-output"><span>🧱 Capital necesario al retiro:</span><strong>$${capital.toLocaleString()}</strong></div>
+            <div class="fila-output"><span>💼 Total acumulado estimado:</span><strong>$${total.toLocaleString()}</strong></div>
+            <div class="fila-output"><span>⚠️ Déficit actual:</span><strong>${deficit > 0 ? "$" + deficit.toLocaleString() : "Meta alcanzada"}</strong></div>
+            <div class="fila-output"><span>💸 Aporte anual extra:</span><strong>${aporteAnual > 0 ? "$" + aporteAnual.toLocaleString() + "/año" : "No requerido"}</strong></div>
+            <div class="fila-output"><span>💰 Aporte mensual extra:</span><strong>${aporteMensual > 0 ? "$" + aporteMensual.toLocaleString() + "/mes" : "No requerido"}</strong></div>
+          </div>
+        `;
     }
 
     function simularMonteCarlo() {
@@ -370,6 +424,22 @@
         }
       });
     }
+    document.querySelectorAll('.tooltip').forEach(el => {
+  const texto = el.getAttribute('data-tooltip');
+  if (texto) {
+    const span = document.createElement('span');
+    span.className = 'tooltip-text';
+    span.textContent = texto;
+    el.appendChild(span);
+
+    el.addEventListener('mouseenter', () => {
+      el.classList.add('active');
+    });
+    el.addEventListener('mouseleave', () => {
+      el.classList.remove('active');
+    });
+  }
+});
   </script>
 </body>
 </html>
