@@ -5,132 +5,138 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Calculadora de Retiro con Monte Carlo</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    body {
-      font-family: sans-serif;
-      padding: 20px;
-      margin: 0;
-      background: #ffffff;
-    }
-    .container {
-      max-width: 700px;
-      margin: auto;
-      padding: 0 10px;
-    }
+<style>
+  body {
+    font-family: sans-serif;
+    padding: 20px;
+    margin: 0;
+    background: #ffffff;
+    font-size: 0.95rem;
+  }
+  .container {
+    max-width: 100%;
+    margin: auto;
+    padding: 0 12px;
+    box-sizing: border-box;
+  }
+  h1 {
+    color: #111827;
+    text-align: center;
+    font-size: 1.75rem;
+    overflow: visible;
+    position: relative;
+    z-index: 0;
+  }
+  label {
+    display: block;
+    margin: 16px 0 4px;
+    font-weight: bold;
+    font-size: 0.95rem;
+  }
+  .tooltip {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+  }
+  .tooltip .tooltip-text {
+    display: none;
+    position: absolute;
+    bottom: 125%;
+    left: 0;
+    transform: translateX(-10%);
+    background-color: #333;
+    color: #fff;
+    padding: 8px;
+    border-radius: 6px;
+    font-size: 13px;
+    line-height: 1.4;
+    width: 250px;
+    z-index: 10;
+  }
+  .tooltip.active .tooltip-text {
+    display: block;
+  }
+  input {
+    width: 100%;
+    max-width: 100%;
+    padding: 10px;
+    margin-bottom: 12px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 1rem;
+    box-sizing: border-box;
+  }
+  button {
+    padding: 14px;
+    width: 100%;
+    max-width: 100%;
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    margin-top: 10px;
+    transition: background 0.3s;
+  }
+  button:hover {
+    background: #1e40af;
+  }
+  .resultado-bloque {
+    background-color: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 24px;
+    overflow-x: auto;
+  }
+  .resultado-bloque h2 {
+    margin-bottom: 12px;
+    color: #1f2937;
+    font-size: 1.25rem;
+  }
+  .resultado-bloque table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+    font-size: 0.95rem;
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  .resultado-bloque td {
+    padding: 6px 0;
+    vertical-align: top;
+    font-size: 0.95rem;
+  }
+  .resultado-bloque td:last-child {
+    text-align: right;
+    font-weight: 500;
+    color: #1f2937;
+  }
+  #mensajeAlerta {
+    display: none;
+  }
+  @media (max-width: 600px) {
     h1 {
-      color: #111827;
-      text-align: center;
-      font-size: 1.75rem;
-    }
-    label {
-      display: block;
-      margin: 16px 0 4px;
-      font-weight: bold;
-    }
-    .tooltip {
-      position: relative;
-      display: inline-block;
-      cursor: pointer;
-    }
-    .tooltip::after {
-      content: attr(data-tooltip);
-      visibility: hidden;
-      opacity: 0;
-      width: 250px;
-      background-color: #333;
-      color: #fff;
-      text-align: left;
-      border-radius: 6px;
-      padding: 8px;
-      position: absolute;
-      z-index: 1;
-      bottom: 125%;
-      left: 0;
-      transform: translateX(-10%);
-      transition: opacity 0.3s;
-      font-size: 13px;
-      line-height: 1.4;
-    }
-    .tooltip:hover::after {
-      visibility: visible;
-      opacity: 1;
-    }
-    input {
-      width: 100%;
-      padding: 10px;
-      margin-bottom: 12px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      font-size: 16px;
-      box-sizing: border-box;
-    }
-    button {
-      padding: 14px;
-      width: 100%;
-      background: #2563eb;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 16px;
-      margin-top: 10px;
-      transition: background 0.3s;
-    }
-    button:hover {
-      background: #1e40af;
-    }
-    .resultado-bloque {
-      background-color: #f9fafb;
-      border: 1px solid #e5e7eb;
-      border-radius: 12px;
-      padding: 16px;
-      margin-top: 24px;
-      overflow-x: auto;
-    }
-    .resultado-bloque h2 {
-      margin-bottom: 12px;
-      color: #1f2937;
       font-size: 1.25rem;
     }
-    .resultado-bloque table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 12px;
+    label {
+      font-size: 0.9rem;
+    }
+    input, button {
+      font-size: 0.9rem;
+      padding: 10px;
+    }
+    .resultado-bloque {
+      padding: 12px;
     }
     .resultado-bloque td {
-      padding: 6px 0;
-      vertical-align: top;
-      font-size: 15px;
+      font-size: 0.85rem;
+      padding: 6px 6px;
     }
-    .resultado-bloque td:last-child {
-      text-align: right;
-      font-weight: 500;
-      color: #1f2937;
-    }
-    h1 {
-  overflow: visible;
-  position: relative;
-  z-index: 0;
-}
-    #mensajeAlerta {
-      display: none;
-    }
-    @media (max-width: 480px) {
-      h1 {
-        font-size: 1.5rem;
-      }
-      label {
-        font-size: 15px;
-      }
-      input, button {
-        font-size: 15px;
-        padding: 12px;
-      }
-      .resultado-bloque td {
-        font-size: 14px;
-      }
-    }
-  </style>
+  }
+</style>
 </head>
 <body>
 <div class="container">
